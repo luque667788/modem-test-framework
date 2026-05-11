@@ -6,6 +6,10 @@
 #   make init
 
 PY        ?= $(shell pyenv which python2 2>/dev/null || command -v python2)
+
+ifeq ($(strip $(PY)),)
+$(error python2 not found. Run `pyenv local mtf-env` from the repo, or invoke `make` without sudo so pyenv shims resolve.)
+endif
 PYTHONPATH_ := .:plmn
 SUDO      ?= sudo env PATH="$$PATH" PYTHONPATH="$(PYTHONPATH_)" HOME="$$HOME"
 

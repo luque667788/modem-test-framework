@@ -1,0 +1,58 @@
+{
+    "state": {
+        "Modem Info": {
+            "Status": {
+                "lock": "sim-pin2", 
+                "state": "connected", 
+                "access tech": "lte", 
+                "signal quality": "67", 
+                "power state": "on"
+            }, 
+            "Modes": {
+                "current": "allowed: 2g, 3g, 4g; preferred: 4g"
+            }, 
+            "3GPP": {
+                "operator id": "26202", 
+                "packet service state": "attached", 
+                "enabled locks": "fixed-dialing", 
+                "registration": "roaming", 
+                "imei": "867652079059861", 
+                "operator name": "vodafone.de"
+            }, 
+            "System": {
+                "device": "/sys/devices/pci0000:00/0000:00:14.0/usb3/3-7", 
+                "primary port": "cdc-wdm0", 
+                "plugin": "quectel"
+            }, 
+            "General": {
+                "device id": "2c618ba13a0ee238e5277b18dca45151283d15af", 
+                "path": "/org/freedesktop/ModemManager1/Modem/2"
+            }, 
+            "Hardware": {
+                "model": "QUECTEL Mobile Broadband Module", 
+                "firmware revision": "EG25GGBR07A08M2G", 
+                "equipment id": "867652079059861", 
+                "manufacturer": "QUALCOMM INCORPORATED"
+            }, 
+            "SIM": {
+                "primary sim path": "/org/freedesktop/ModemManager1/SIM/1"
+            }
+        }, 
+        "SIM Registered": true, 
+        "Modem Location": "/org/freedesktop/ModemManager1/Modem/2", 
+        "Modem Enabled": true, 
+        "SIM Unlocked": true, 
+        "Modem Index": "2", 
+        "SIM Present": true
+    }, 
+    "errors": [], 
+    "steps": [
+        "modem_cmds.py(17): mmcli_cmd_present(): which mmcli", 
+        "modem_cmds.py(30): list_modems(): mmcli -L", 
+        "modem_cmds.py(84): modem_enabled(): mmcli -K -m 2", 
+        "modem_cmds.py(156): sim_present(): mmcli -K -m 2", 
+        "modem_cmds.py(183): sim_unlocked(): mmcli -K -m 2", 
+        "modem_cmds.py(213): is_sim_registered(): mmcli -K -m 2", 
+        "modem_cmds.py(137): modem_info(): mmcli -K -m 2"
+    ]
+}
