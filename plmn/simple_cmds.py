@@ -17,12 +17,12 @@ class SimpleCmds():
         modem_idx = Results.get_state('Modem Index')
         assert modem_idx is not None
 
-        cmd = "mmcli -m {} --simple-status".format(modem_idx)
+        cmd = "mmcli -K -m {} ".format(modem_idx)
         res = Runner.run_cmd(cmd).strip()
 
         logging.debug("Response: " + str(res))
 
-        simple_status = MMCLIParser.parse(res)
+        simple_status = MMCLIParser.parse_keyvalue(res)
         assert simple_status is not {}
 
         Results.add_state('Simple Status', simple_status)

@@ -72,10 +72,14 @@ class AtCmds():
 
     @classmethod
     def unlock_at_cmds(cls):
+        # `AT!ENTERCND="A710"` is Sierra Wireless proprietary — gates access to
+        # factory/extended AT commands on Sierra MC7xxx modems. Quectel, Telit,
+        # Huawei, etc. do not implement it and return `+CME ERROR: unknown`.
+        # Disabled here; re-enable behind a vendor check if testing on Sierra.
         if True != Results.get_state('AT Unlocked'):
-            res = cls.send_at_cmd('AT!ENTERCND="A710"')
-            logging.debug("AT Unlock Results: " + str(res))
-            assert res == '', 'AT unlock command not succesful'
+            # res = cls.send_at_cmd('AT!ENTERCND="A710"')
+            # logging.debug("AT Unlock Results: " + str(res))
+            # assert res == '', 'AT unlock command not succesful'
             Results.add_state('AT Unlocked', True)
 
     @classmethod

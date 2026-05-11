@@ -8,79 +8,111 @@ from mmcli_parser import MMCLIParser
 
 import time
 
+
 class ModemCmds:
     @classmethod
     def mmcli_cmd_present(cls):
-        mmcli_exec = Results.get_state('MMCLI Exec')
+        mmcli_exec = Results.get_state("MMCLI Exec")
         if mmcli_exec is None:
-            mmcli_exec = Runner.run_cmd('which mmcli')
+            mmcli_exec = Runner.run_cmd("which mmcli")
             if mmcli_exec is not None and len(mmcli_exec.strip()) is 0:
-                Results.add_state('MMCLI Exec', mmcli_exec.strip())
+                Results.add_state("MMCLI Exec", mmcli_exec.strip())
 
         assert mmcli_exec is not None
 
     @classmethod
     def list_modems(cls):
-        logging.debug('Listing modems.')
+        logging.debug("Listing modems.")
         cls.mmcli_cmd_present()
 
-        modem_loc = Results.get_state('Modem Location')
+        modem_loc = Results.get_state("Modem Location")
         if modem_loc is None:
-            mmcli = Runner.run_cmd('mmcli -L')
-            if '/org/freedesktop/ModemManager' not in mmcli:
-                Results.add_error('mmcli -L', 'Modem not found. Please enable the modem through instrument UI.')
+            mmcli = Runner.run_cmd("mmcli -L")
+            if "/org/freedesktop/ModemManager" not in mmcli:
+                Results.add_error(
+                    "mmcli -L",
+                    "Modem not found. Please enable the modem through instrument UI.",
+                )
             else:
-                modem_loc = re.search(r'(/org/freedesktop/ModemManager\d/Modem/\d)', mmcli.strip()).group(1)
-                Results.add_state('Modem Location', modem_loc)
-                Results.add_state('Modem Index', re.search(r'/org/freedesktop/ModemManager\d/Modem/(\d)', modem_loc).group(1))
+                modem_loc = re.search(
+                    r"(/org/freedesktop/ModemManager\d/Modem/\d)", mmcli.strip()
+                ).group(1)
+                Results.add_state("Modem Location", modem_loc)
+                Results.add_state(
+                    "Modem Index",
+                    re.search(
+                        r"/org/freedesktop/ModemManager\d/Modem/(\d)", modem_loc
+                    ).group(1),
+                )
 
-        logging.debug('Modem Location: ' + str(modem_loc))
-        logging.debug('Modem Index: ' + str(Results.get_state('Modem Index')))
+        logging.debug("Modem Location: " + str(modem_loc))
+        logging.debug("Modem Index: " + str(Results.get_state("Modem Index")))
         assert modem_loc is not None
 
     @classmethod
     def list_modem_wait(cls):
         cls.mmcli_cmd_present()
 
-        modem_loc = Results.get_state('Modem Location')
+        modem_loc = Results.get_state("Modem Location")
         if modem_loc is None:
-            for idx in range(0,60):
-                mmcli = Runner.run_cmd('mmcli -L')
-                if '/org/freedesktop/ModemManager1/Modem/' not in mmcli:
-                    logging.debug('Modem not listed yet. Waiting..')
+            for idx in range(0, 60):
+                mmcli = Runner.run_cmd("mmcli -L")
+                if "/org/freedesktop/ModemManager1/Modem/" not in mmcli:
+                    logging.debug("Modem not listed yet. Waiting..")
                     time.sleep(1)
                 else:
-                    modem_loc = re.search(r'(/org/freedesktop/ModemManager\d/Modem/\d)', mmcli.strip()).group(1)
-                    Results.add_state('Modem Location', modem_loc)
-                    Results.add_state('Modem Index',
-                                      re.search(r'/org/freedesktop/ModemManager\d/Modem/(\d)', modem_loc).group(1))
+                    modem_loc = re.search(
+                        r"(/org/freedesktop/ModemManager\d/Modem/\d)", mmcli.strip()
+                    ).group(1)
+                    Results.add_state("Modem Location", modem_loc)
+                    Results.add_state(
+                        "Modem Index",
+                        re.search(
+                            r"/org/freedesktop/ModemManager\d/Modem/(\d)", modem_loc
+                        ).group(1),
+                    )
                     break
-
 
     @classmethod
     def modem_enabled(cls):
         cls.list_modems()
 
-        modem_en = Results.get_state('Modem Enabled')
+        modem_en = Results.get_state("Modem Enabled")
         if modem_en is None:
-            modem_idx = Results.get_state('Modem Index')
+            modem_idx = Results.get_state("Modem Index")
 
-            mmcli = Runner.run_cmd('mmcli -m {} --simple-status'.format(modem_idx))
-            res = MMCLIParser.parse(mmcli)
+            mmcli = Runner.run_cmd("mmcli -K -m {}".format(modem_idx))
+            res = MMCLIParser.parse_keyvalue(mmcli)
 
-            logging.debug('mmcli -m {} --simple-status output'.format(modem_idx))
+            logging.debug("mmcli -m {}  output".format(modem_idx))
             logging.debug(res)
 
-            if res is not None and 'Status' in res.keys() and 'state' in res['Status'].keys():
-                if res['Status']['state'] == 'disabled':
-                    Results.add_error('mmcli -m {} --simple-status'.format(modem_idx), 'Modem not enabled. Please enable using mmcli -m {} --enable'.format(modem_idx))
+            if (
+                res is not None
+                and "Status" in res.keys()
+                and "state" in res["Status"].keys()
+            ):
+                if res["Status"]["state"] == "disabled":
+                    Results.add_error(
+                        "mmcli -m {} ".format(modem_idx),
+                        "Modem not enabled. Please enable using mmcli -m {} --enable".format(
+                            modem_idx
+                        ),
+                    )
 
-                elif res['Status']['state'] != 'registered' and res['Status']['state'] != 'connected' and res['Status']['state'] != 'searching' and res['Status']['state'] != 'enabled':
-                    Results.add_error('mmcli -m {} --simple-status'.format(modem_idx),
-                                      'Modem not enabled/registered. Contact support with log files')
+                elif (
+                    res["Status"]["state"] != "registered"
+                    and res["Status"]["state"] != "connected"
+                    and res["Status"]["state"] != "searching"
+                    and res["Status"]["state"] != "enabled"
+                ):
+                    Results.add_error(
+                        "mmcli -m {} ".format(modem_idx),
+                        "Modem not enabled/registered. Contact support with log files",
+                    )
                 else:
                     modem_en = True
-                    Results.add_state('Modem Enabled', modem_en)
+                    Results.add_state("Modem Enabled", modem_en)
 
         assert modem_en is True
 
@@ -97,18 +129,20 @@ class ModemCmds:
         cls.sim_unlocked()
         cls.sim_registered()
 
-        modem_info = Results.get_state('Modem Info')
+        modem_info = Results.get_state("Modem Info")
         if modem_info is None:
-            modem_idx = Results.get_state('Modem Index')
+            modem_idx = Results.get_state("Modem Index")
             assert modem_idx is not None
 
-            mmcli = Runner.run_cmd('mmcli -m {}'.format(modem_idx)).strip()
-            modem_info = MMCLIParser.parse(mmcli)
+            mmcli = Runner.run_cmd("mmcli -K -m {}".format(modem_idx)).strip()
+            modem_info = MMCLIParser.parse_keyvalue(mmcli)
             if len(modem_info.keys()) > 0:
-                Results.add_state('Modem Info', modem_info)
+                Results.add_state("Modem Info", modem_info)
             else:
-                Results.add_error('mmcli -m {}'.format(modem_idx),
-                                  'Error getting/parsing modem info. Contact support with test output.')
+                Results.add_error(
+                    "mmcli -m {}".format(modem_idx),
+                    "Error getting/parsing modem info. Contact support with test output.",
+                )
 
         assert modem_info is not None
 
@@ -116,18 +150,24 @@ class ModemCmds:
     def sim_present(cls):
         cls.list_modems()
 
-        sim_present = Results.get_state('SIM Present')
+        sim_present = Results.get_state("SIM Present")
         if sim_present is None:
-            modem_idx = Results.get_state('Modem Index')
-            mmcli = Runner.run_cmd('mmcli -m {}'.format(modem_idx))
-            res = MMCLIParser.parse(mmcli)
-            if 'SIM' in res.keys() and 'Status' in res.keys() and 'state' in res['Status'].keys():
-                if res['Status']['state'] == 'failed':
-                    Results.add_error('mmcli -m {}'.format(modem_idx) + ' | gerp state',
-                                      'SIM card not found. Insert SIM card and restart modem')
+            modem_idx = Results.get_state("Modem Index")
+            mmcli = Runner.run_cmd("mmcli -K -m {}".format(modem_idx))
+            res = MMCLIParser.parse_keyvalue(mmcli)
+            if (
+                "SIM" in res.keys()
+                and "Status" in res.keys()
+                and "state" in res["Status"].keys()
+            ):
+                if res["Status"]["state"] == "failed":
+                    Results.add_error(
+                        "mmcli -m {}".format(modem_idx) + " | gerp state",
+                        "SIM card not found. Insert SIM card and restart modem",
+                    )
                 else:
                     sim_present = True
-                    Results.add_state('SIM Present', sim_present)
+                    Results.add_state("SIM Present", sim_present)
 
         assert sim_present is True
 
@@ -135,20 +175,27 @@ class ModemCmds:
     def sim_unlocked(cls):
         cls.sim_present()
 
-        sim_unlocked = Results.get_state('SIM Unlocked')
+        sim_unlocked = Results.get_state("SIM Unlocked")
         if sim_unlocked is None:
-            modem_idx = Results.get_state('Modem Index')
+            modem_idx = Results.get_state("Modem Index")
             assert modem_idx is not None
 
-            mmcli = Runner.run_cmd('mmcli -m {}'.format(modem_idx))
-            res = MMCLIParser.parse(mmcli)
-            if '3GPP' in res.keys() and 'enabled locks' in res['3GPP'].keys():
-                if res['3GPP']['enabled locks'] == 'none':
-                    sim_unlocked = True
-                    Results.add_state('SIM Unlocked', sim_unlocked)
+            mmcli = Runner.run_cmd("mmcli -K -m {}".format(modem_idx))
+            res = MMCLIParser.parse_keyvalue(mmcli)
+            # SIM is "unlocked" iff modem is not blocked in `locked` state.
+            # `enabled-locks` may contain SIM services (e.g. `fixed-dialing`/FDN)
+            # that do NOT gate normal modem use — those are not PIN locks.
+            state = res.get("Status", {}).get("state")
+            if state is not None:
+                if state == "locked":
+                    Results.add_state("SIM Unlocked", False)
+                    Results.add_error(
+                        "mmcli -m {}".format(modem_idx) + " | grep state",
+                        "SIM card is locked with a PIN.",
+                    )
                 else:
-                    Results.add_state('SIM Unlocked', False)
-                    Results.add_error('mmcli -m {}'.format(modem_idx) + ' | grep \'enabled lock\'', 'SIM card is locked with a PIN.')
+                    sim_unlocked = True
+                    Results.add_state("SIM Unlocked", sim_unlocked)
         assert sim_unlocked is True
 
     @classmethod
@@ -156,21 +203,28 @@ class ModemCmds:
         cls.sim_present()
         cls.sim_unlocked()
 
-        sim_registered = Results.get_state('SIM Registered')
-        logging.debug('SIM Registered: ' + str(sim_registered))
+        sim_registered = Results.get_state("SIM Registered")
+        logging.debug("SIM Registered: " + str(sim_registered))
 
         if sim_registered is not True:
-            modem_idx = Results.get_state('Modem Index')
+            modem_idx = Results.get_state("Modem Index")
             assert modem_idx is not None
 
-            mmcli = Runner.run_cmd('mmcli -m {}'.format(modem_idx))
-            res = MMCLIParser.parse(mmcli)
-            if 'SIM' in res.keys() and 'Status' in res.keys() and 'state' in res['Status'].keys():
-                if res['Status']['state'] == 'registered' or res['Status']['state'] == 'connected':
+            mmcli = Runner.run_cmd("mmcli -K -m {}".format(modem_idx))
+            res = MMCLIParser.parse_keyvalue(mmcli)
+            if (
+                "SIM" in res.keys()
+                and "Status" in res.keys()
+                and "state" in res["Status"].keys()
+            ):
+                if (
+                    res["Status"]["state"] == "registered"
+                    or res["Status"]["state"] == "connected"
+                ):
                     sim_registered = True
-                    Results.add_state('SIM Registered', sim_registered)
+                    Results.add_state("SIM Registered", sim_registered)
                 else:
-                    Results.add_state('SIM Registered', False)
+                    Results.add_state("SIM Registered", False)
 
         if sim_registered is True:
             return True
@@ -181,48 +235,57 @@ class ModemCmds:
     def sim_registered(cls):
         sim_reg = cls.is_sim_registered()
         if sim_reg is False:
-            Results.add_error('mmcli -m 0 | grep state',
-                              'SIM card not registered. Please restart modem manager using: sudo stop modemmanager && sudo start modemmanager')
+            Results.add_error(
+                "mmcli -m 0 | grep state",
+                "SIM card not registered. Please restart modem manager using: sudo stop modemmanager && sudo start modemmanager",
+            )
 
-        assert sim_reg is True, 'SIM is not yet Registered'
+        assert sim_reg is True, "SIM is not yet Registered"
 
     @classmethod
     def modem_manager_is_running(cls):
-        ps_ef = Runner.run_cmd('ps -ef')
-        if 'ModemManager' in ps_ef:
+        ps_ef = Runner.run_cmd("ps -ef")
+        if "ModemManager" in ps_ef:
             return True
         else:
             return False
 
     @classmethod
     def modem_manager_in_debug_mode(cls):
-        ps_ef = Runner.run_cmd('ps -ef')
-        if 'ModemManager --debug' in ps_ef:
-            Results.add_state('Modem Manager Debug', True)
-            return True
-        else:
-            Results.add_state('Modem Manager Debug', False)
-            return False
-
+        # `mmcli --command` (raw AT) is gated by the `--debug` argv flag at
+        # daemon startup, not by runtime log level. So detect via process argv.
+        ps_ef = Runner.run_cmd("ps -ef")
+        is_debug = "ModemManager --debug" in ps_ef
+        Results.add_state("Modem Manager Debug", is_debug)
+        return is_debug
 
     @classmethod
     def modem_manager_start_in_debug_mode(cls):
+        if cls.modem_manager_in_debug_mode():
+            return True
+
+        # Install a systemd drop-in that appends --debug to ExecStart, then
+        # restart the unit. Idempotent: re-writing the same file is a no-op.
+        drop_dir = "/etc/systemd/system/ModemManager.service.d"
+        drop_file = drop_dir + "/debug.conf"
+        Runner.run_cmd("mkdir -p {}".format(drop_dir))
+        Runner.run_cmd(
+            "printf '[Service]\\nExecStart=\\nExecStart=/usr/sbin/ModemManager --debug\\n' > {}".format(drop_file)
+        )
+        Runner.run_cmd("systemctl daemon-reload")
+        Runner.run_cmd("systemctl restart ModemManager")
+        time.sleep(3)
+
+        # Refresh cached modem info after daemon restart.
+        cls.modem_info()
+
         dbg_mode = cls.modem_manager_in_debug_mode()
         if not dbg_mode:
-            Runner.run_cmd('sudo stop modemmanager')
-            time.sleep(2)
-            Runner.run_cmd('/usr/sbin/ModemManager --debug')
-            time.sleep(5)
-
-            # Get all modem info again.
-            cls.modem_info()
-
-            # Ensure debug omde is True
-            dbg_mode = cls.modem_manager_in_debug_mode()
-            if not dbg_mode:
-                Results.add_error('/usr/sbin/ModemManager --debug', 'Modem manager cannot be started in debug mode.')
-
-            assert dbg_mode is True
+            Results.add_error(
+                "systemctl restart ModemManager (debug drop-in)",
+                "Could not start ModemManager in debug mode.",
+            )
+        assert dbg_mode is True
         return dbg_mode
 
     @classmethod
@@ -232,20 +295,19 @@ class ModemCmds:
         cls.sim_present()
         cls.sim_unlocked()
 
-
     # Uses MMCLI commands to put modem into Low power mode (LPM) and back online.
     @classmethod
     def mode_lpm_online(cls):
         cls.list_modems()
 
-        modem_idx = Results.get_state('Modem Index')
+        modem_idx = Results.get_state("Modem Index")
         assert modem_idx is not None
 
-        res = Runner.run_cmd('mmcli -m {} --disable'.format(modem_idx))
+        res = Runner.run_cmd("mmcli -m {} --disable".format(modem_idx))
         assert res is not None
         time.sleep(3)
 
-        res = Runner.run_cmd('mmcli -m {} --enable'.format(modem_idx))
+        res = Runner.run_cmd("mmcli -m {} --enable".format(modem_idx))
         assert res is not None
         time.sleep(10)
 
@@ -256,11 +318,11 @@ class ModemCmds:
         # Use the other method using AT commands (AT!GRESET) it works always.
 
         # Find the highest index /dev/ttyACM* device.
-        res = Runner.run_cmd('ls /dev/ttyACM*').strip()
-        devs = re.findall(r'/dev/ttyACM\d', res)
+        res = Runner.run_cmd("ls /dev/ttyACM*").strip()
+        devs = re.findall(r"/dev/ttyACM\d", res)
         largest_dev_idx = 0
         for dev in devs:
-            dev_idx = re.search('/dev/ttyACM(\d)', dev).group(1)
+            dev_idx = re.search("/dev/ttyACM(\d)", dev).group(1)
             if int(dev_idx) > largest_dev_idx:
                 largest_dev_idx = int(dev_idx)
 
@@ -281,6 +343,7 @@ class ModemCmds:
         cls.mmcli_cmd_present()
         cls.list_modem_wait()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     process_args()
     ModemCmds.modem_enabled()

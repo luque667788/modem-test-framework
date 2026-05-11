@@ -51,51 +51,49 @@ class AtCmdChecks(unittest.TestCase):
         res = AtCmds.send_at_cmd('AT+CGMR')
         assert res is not None
 
-        # Check supported registrations
-        res = AtCmds.send_at_cmd('AT!SELRAT=?')
+        # Ported from Sierra `AT!*` commands to Quectel / 3GPP equivalents.
+        # Original Sierra commands kept in comments for reference.
+
+        # Check supported radio access modes  (Sierra: AT!SELRAT=?)
+        res = AtCmds.send_at_cmd('AT+QCFG="nwscanmode"')
         assert res is not None
 
-        # Check different PLMN profiles on modem.
-        res = AtCmds.send_at_cmd('AT!SCACT?')
+        # Check PDP context activation state  (Sierra: AT!SCACT?)
+        res = AtCmds.send_at_cmd('AT+CGACT?')
         assert res is not None
 
-        # Check LTE Info
-        res = AtCmds.send_at_cmd('AT!LTEINFO=?')
+        # Check LTE serving cell info  (Sierra: AT!LTEINFO=?)
+        res = AtCmds.send_at_cmd('AT+QENG="servingcell"')
         assert res is not None
 
-        # Check LTE NAS Info
-        res = AtCmds.send_at_cmd('AT!LTENAS?')
+        # Check network/registration info  (Sierra: AT!LTENAS?)
+        res = AtCmds.send_at_cmd('AT+QNWINFO')
         assert res is not None
 
-        # Query Antenna settings configuration
-        res = AtCmds.send_at_cmd('AT!ANTSEL=?')
+        # Antenna selection: no portable Quectel equivalent. Skip.
+        # (Sierra: AT!ANTSEL=?)
+
+        # Query supported + current bands  (Sierra: AT!BAND=? / AT!GETBAND?)
+        res = AtCmds.send_at_cmd('AT+QCFG="band"')
+        assert res is not None
+        assert 'No Service' not in res, 'AT Command QCFG="band" reporting no service'
+
+        # Query signal/serving-cell status  (Sierra: AT!GSTATUS?)
+        res = AtCmds.send_at_cmd('AT+QCSQ')
         assert res is not None
 
-        # Query Supported Bands.
-        res = AtCmds.send_at_cmd('AT!BAND=?')
+        # Query functional mode  (Sierra: AT^MODE? -- Huawei, never matched anyway)
+        res = AtCmds.send_at_cmd('AT+CFUN?')
         assert res is not None
 
-        # Query current band
-        res = AtCmds.send_at_cmd('AT!GETBAND?')
-        assert res is not None
-        assert 'No Service' not in res, 'AT Command GETBAND reporting no service'
-
-        # Query operational status
-        res = AtCmds.send_at_cmd('AT!GSTATUS?')
+        # Query preferred PLMN list  (Sierra: AT!NVPLMN?)
+        res = AtCmds.send_at_cmd('AT+CPOL?')
         assert res is not None
 
-        # Query Modem system indication mode.
-        res = AtCmds.send_at_cmd('AT^MODE?')
+        # Check PS (Packet Service) attached  (Sierra: AT!SELMODE?)
+        res = AtCmds.send_at_cmd('AT+CGATT?')
         assert res is not None
-
-        # Query Provisioned Network List.
-        res = AtCmds.send_at_cmd('AT!NVPLMN?')
-        assert res is not None
-
-        # Query if PS (Packet Data Service) mode is enabled.
-        res = AtCmds.send_at_cmd('AT!SELMODE?')
-        assert res is not None
-        assert 'PS' in res
+        assert '+CGATT: 1' in res, 'PS domain not attached'
 
         # Query currently configured profile details.
         res = AtCmds.send_at_cmd('AT+CGDCONT?')

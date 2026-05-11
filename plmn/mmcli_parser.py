@@ -54,6 +54,86 @@ class MMCLIParser():
 
         return res
 
+    @classmethod
+    def parse_keyvalue(cls, text):
+        # Parse `mmcli -K` output (dotted-key flat format) into nested dict
+        # shaped like legacy MMCLIParser.parse output, so existing consumers
+        # (res["Status"]["state"], res["3GPP"]["enabled locks"], ...) keep working.
+        flat = {}
+        arrays = {}  # base -> list of values, for .length / .value[i]
+        for raw in text.split('\n'):
+            if ':' not in raw:
+                continue
+            k, _, v = raw.partition(':')
+            k = k.strip()
+            v = v.strip()
+            m = re.match(r'^(.*)\.value\[(\d+)\]$', k)
+            if m:
+                base, idx = m.group(1), int(m.group(2))
+                arrays.setdefault(base, {})[idx] = v
+                continue
+            if k.endswith('.length'):
+                continue
+            flat[k] = v
+
+        def arr_join(base, empty='none'):
+            vals = arrays.get(base)
+            if not vals:
+                return empty
+            return ', '.join(vals[i] for i in sorted(vals.keys()))
+
+        res = {'Status': {}, '3GPP': {}, 'SIM': {}, 'Modes': {}, 'Hardware': {}, 'System': {}, 'General': {}}
+
+        # Status section
+        if 'modem.generic.state' in flat:
+            res['Status']['state'] = flat['modem.generic.state']
+        if 'modem.generic.unlock-required' in flat:
+            res['Status']['lock'] = flat['modem.generic.unlock-required']
+        if 'modem.generic.power-state' in flat:
+            res['Status']['power state'] = flat['modem.generic.power-state']
+        access = arr_join('modem.generic.access-technologies', empty='')
+        if access:
+            res['Status']['access tech'] = access
+        if 'modem.generic.signal-quality.value' in flat:
+            res['Status']['signal quality'] = flat['modem.generic.signal-quality.value']
+
+        # 3GPP section
+        if 'modem.3gpp.registration-state' in flat:
+            res['3GPP']['registration'] = flat['modem.3gpp.registration-state']
+        res['3GPP']['enabled locks'] = arr_join('modem.3gpp.enabled-locks', empty='none')
+        if 'modem.3gpp.operator-code' in flat:
+            res['3GPP']['operator id'] = flat['modem.3gpp.operator-code']
+        if 'modem.3gpp.operator-name' in flat:
+            res['3GPP']['operator name'] = flat['modem.3gpp.operator-name']
+        if 'modem.3gpp.imei' in flat:
+            res['3GPP']['imei'] = flat['modem.3gpp.imei']
+        if 'modem.3gpp.packet-service-state' in flat:
+            res['3GPP']['packet service state'] = flat['modem.3gpp.packet-service-state']
+
+        # SIM section: signal presence via primary sim path
+        sim_path = flat.get('modem.generic.sim')
+        if sim_path and sim_path != '--':
+            res['SIM']['primary sim path'] = sim_path
+
+        # Hardware / General passthrough (best-effort, for debug/info dumps)
+        for src, (sec, key) in {
+            'modem.generic.manufacturer': ('Hardware', 'manufacturer'),
+            'modem.generic.model': ('Hardware', 'model'),
+            'modem.generic.revision': ('Hardware', 'firmware revision'),
+            'modem.generic.equipment-identifier': ('Hardware', 'equipment id'),
+            'modem.generic.device-identifier': ('General', 'device id'),
+            'modem.dbus-path': ('General', 'path'),
+            'modem.generic.plugin': ('System', 'plugin'),
+            'modem.generic.primary-port': ('System', 'primary port'),
+            'modem.generic.device': ('System', 'device'),
+            'modem.generic.current-modes': ('Modes', 'current'),
+        }.items():
+            if src in flat:
+                res[sec][key] = flat[src]
+
+        return res
+
+
 if __name__ == '__main__':
     text = '''
     
