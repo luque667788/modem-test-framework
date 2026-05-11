@@ -1,5 +1,26 @@
 # PLMN Regression Project
 
+<!--toc:start-->
+- [PLMN Regression Project](#plmn-regression-project)
+  - [Requirements](#requirements)
+  - [Setup](#setup)
+    - [1. Install Python 2.7 via pyenv](#1-install-python-27-via-pyenv)
+    - [2. Create and activate a virtualenv](#2-create-and-activate-a-virtualenv)
+    - [3. Install dependencies](#3-install-dependencies)
+  - [Running Tests](#running-tests)
+    - [Run the full suite](#run-the-full-suite)
+    - [Run individual suites](#run-individual-suites)
+    - [Run a single file manually](#run-a-single-file-manually)
+    - [Run a specific test method](#run-a-specific-test-method)
+  - [Manual-Only Tests](#manual-only-tests)
+  - [ModemManager Debug Mode](#modemmanager-debug-mode)
+  - [Project Layout](#project-layout)
+    - [`plmn/`](#plmn)
+      - [`mmcli_parser.py`](#mmcliparserpy)
+      - [`at_cmds.py`](#atcmdspy)
+    - [`tests/`](#tests)
+<!--toc:end-->
+
 Regression framework for checking modem status, registration, and connectivity via ModemManager/mmcli. Targets Quectel modems (EG25-G and compatible); standard 3GPP AT commands used throughout.
 
 ---

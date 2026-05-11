@@ -32,7 +32,7 @@ class SimpleCmdChecks(unittest.TestCase):
     def test_simple_status_is_connected(self):
         assert SimpleCmds.simple_status_is_connected() is True
 
-    @unittest.skip("Skipping this as this is only applicable for Roaming scenario")
+    # @unittest.skip("Skipping this as this is only applicable for Roaming scenario")
     def test_simple_status_is_roaming(self):
         assert SimpleCmds.simple_status_is_roaming() is True
 
