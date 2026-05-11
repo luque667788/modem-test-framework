@@ -252,35 +252,40 @@ class ModemCmds:
 
     @classmethod
     def modem_manager_in_debug_mode(cls):
+        # `mmcli --command` (raw AT) is gated by the `--debug` argv flag at
+        # daemon startup, not by runtime log level. So detect via process argv.
         ps_ef = Runner.run_cmd("ps -ef")
-        if "ModemManager --debug" in ps_ef:
-            Results.add_state("Modem Manager Debug", True)
-            return True
-        else:
-            Results.add_state("Modem Manager Debug", False)
-            return False
+        is_debug = "ModemManager --debug" in ps_ef
+        Results.add_state("Modem Manager Debug", is_debug)
+        return is_debug
 
     @classmethod
     def modem_manager_start_in_debug_mode(cls):
+        if cls.modem_manager_in_debug_mode():
+            return True
+
+        # Install a systemd drop-in that appends --debug to ExecStart, then
+        # restart the unit. Idempotent: re-writing the same file is a no-op.
+        drop_dir = "/etc/systemd/system/ModemManager.service.d"
+        drop_file = drop_dir + "/debug.conf"
+        Runner.run_cmd("mkdir -p {}".format(drop_dir))
+        Runner.run_cmd(
+            "printf '[Service]\\nExecStart=\\nExecStart=/usr/sbin/ModemManager --debug\\n' > {}".format(drop_file)
+        )
+        Runner.run_cmd("systemctl daemon-reload")
+        Runner.run_cmd("systemctl restart ModemManager")
+        time.sleep(3)
+
+        # Refresh cached modem info after daemon restart.
+        cls.modem_info()
+
         dbg_mode = cls.modem_manager_in_debug_mode()
         if not dbg_mode:
-            Runner.run_cmd("sudo stop modemmanager")
-            time.sleep(2)
-            Runner.run_cmd("/usr/sbin/ModemManager --debug")
-            time.sleep(5)
-
-            # Get all modem info again.
-            cls.modem_info()
-
-            # Ensure debug omde is True
-            dbg_mode = cls.modem_manager_in_debug_mode()
-            if not dbg_mode:
-                Results.add_error(
-                    "/usr/sbin/ModemManager --debug",
-                    "Modem manager cannot be started in debug mode.",
-                )
-
-            assert dbg_mode is True
+            Results.add_error(
+                "systemctl restart ModemManager (debug drop-in)",
+                "Could not start ModemManager in debug mode.",
+            )
+        assert dbg_mode is True
         return dbg_mode
 
     @classmethod
