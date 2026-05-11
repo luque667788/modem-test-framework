@@ -44,17 +44,6 @@ class PythonChecks(unittest.TestCase):
         else:
             Results.add_state('pip', pip)
 
-    @unittest.skip('Not required for regression (Pyserial is not required)')
-    def test_pip_pacakages(self):
-        # Check if required pip packages exist
-        pip_pkgs = Runner.run_cmd('pip freeze')
-
-        # For now pyserial is the only required package,
-        # others may be required in future.
-        if ('pyserial' not in pip_pkgs.lower()):
-            Results.add_error('pip freeze | grep pyserial', 'PySerial package not found. Please install using: pip install pyserial')
-        else:
-            Results.add_state('PySerial', True)
 
 if __name__ == '__main__':
     nargs = process_args()
