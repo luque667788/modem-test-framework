@@ -1,0 +1,14 @@
+{
+  "venvPath": "/home/luque/.pyenv/versions",
+  "venv": "mtf-env",
+  "pythonVersion": "2.7",
+  "pythonPlatform": "Linux",
+  "extraPaths": [".", "plmn"],
+  "include": ["plmn", "tests"],
+  "exclude": ["**/__pycache__", "**/*.pyc"],
+  "typeCheckingMode": "off",
+  "reportMissingImports": "warning",
+  "reportMissingModuleSource": "none",
+  "reportGeneralTypeIssues": "none",
+  "reportUndefinedVariable": "warning"
+}
